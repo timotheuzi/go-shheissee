@@ -18,7 +18,7 @@ MAIN_PACKAGE=./cmd/shheissee
 
 # Binary name and distribution directory
 BINARY_NAME=go-shheissee
-DIST_DIR=dist
+DIST_DIR=bin
 
 # Build targets
 .PHONY: all build clean test coverage run deps fmt vet help create-dist

@@ -47,12 +47,17 @@ go build -o shheissee ./cmd/shheissee
 ./shheissee scan       # Quick security scan
 ./shheissee bluetooth  # Bluetooth device monitor
 ./shheissee demo       # Setup demo scenario
+
+# Using Makefile (recommended)
+make run            # Run with default port (8080)
+make run-monitor    # Run monitor with default port
+PORT=9090 make run  # Run with custom port
 ```
 
 **What happens automatically:**
 - 🧹 Creates necessary directories and files
 - 🔨 Builds scanning capabilities for network, Bluetooth, and WiFi
-- 🚀 Starts the web interface on http://localhost:8080
+- 🚀 Starts the web interface on http://localhost:8080 (or custom port if configured)
 - 📊 Begins continuous monitoring if started in monitor mode
 
 ## ✨ Features
@@ -342,8 +347,11 @@ sudo ./shheissee monitor
 # Check if port 8080 is available
 netstat -tlnp | grep :8080
 
-# Change port by modifying internal/models/models.go
-WebServerPort: 8081,
+# Change port using Makefile
+PORT=8081 make run
+
+# Or run directly with environment variable
+APP_PORT=8081 ./shheissee
 ```
 
 **No devices found:**

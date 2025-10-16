@@ -1,6 +1,8 @@
 package models
 
 import (
+	"os"
+	"strconv"
 	"time"
 )
 
@@ -110,13 +112,19 @@ type AttackDetectorConfig struct {
 
 // DefaultConfig returns default configuration
 func DefaultConfig() *AttackDetectorConfig {
+	port := 8080
+	if portStr := os.Getenv("APP_PORT"); portStr != "" {
+		if p, err := strconv.Atoi(portStr); err == nil {
+			port = p
+		}
+	}
 	return &AttackDetectorConfig{
 		KnownDevicesFile:        "model/known_devices.json",
 		BluetoothDevicesFile:    "model/known_bluetooth_devices.json",
 		LogFile:                 "log/intrusion_log.log",
 		ScanInterval:            60 * time.Second,
 		AnomalyThreshold:        2.0,
-		WebServerPort:           8080,
+		WebServerPort:           port,
 	}
 }
 

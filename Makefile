@@ -16,6 +16,9 @@ export GOPATH:=$(HOME)/go
 # Main package
 MAIN_PACKAGE=./cmd/shheissee
 
+# Configuration
+PORT ?= 8080
+
 # Binary name and distribution directory
 BINARY_NAME=go-shheissee
 DIST_DIR=bin
@@ -82,12 +85,12 @@ coverage:
 # Run the application
 run:
 	$(GOBUILD) -o $(BINARY_NAME) $(MAIN_PACKAGE)
-	./$(BINARY_NAME)
+	APP_PORT=$(PORT) ./$(BINARY_NAME)
 
 # Run in monitor mode
 run-monitor:
 	$(GOBUILD) -o $(BINARY_NAME) $(MAIN_PACKAGE)
-	./$(BINARY_NAME) monitor
+	APP_PORT=$(PORT) ./$(BINARY_NAME) monitor
 
 # Download dependencies
 deps:
@@ -158,6 +161,9 @@ docker-run:
 help:
 	@echo "Go-Shheissee - Makefile Help"
 	@echo ""
+	@echo "Configuration variables:"
+	@echo "  PORT           Web server port (default: 8080)"
+	@echo ""
 	@echo "Available targets:"
 	@echo "  build          Build the binary"
 	@echo "  build-race     Build with race detection"
@@ -185,6 +191,7 @@ help:
 	@echo "Usage examples:"
 	@echo "  make build && ./go-shheissee              # Build and run interactively"
 	@echo "  make run-monitor                       # Build and start monitoring"
+	@echo "  make run PORT=9090                     # Run with custom port"
 	@echo "  make build-all                         # Cross-platform build"
 	@echo "  make check                             # Run all code checks"
 

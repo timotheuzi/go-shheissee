@@ -147,6 +147,25 @@
             font-size: 0.9em;
         }
 
+        .footer-nav {
+            margin-top: 20px;
+        }
+
+        .footer-nav a {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            margin: 0 15px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .footer-nav a:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 10px;
@@ -214,6 +233,11 @@
 
         <div class="footer">
             <p>🔒 Shheissee Go Security Monitor | Real-time Updates Active | {{.Timestamp}}</p>
+            <div class="footer-nav">
+                <a href="/">🏠 Main Dashboard</a>
+                <a href="/intrusion-detection">🛡️ Intrusion Log</a>
+                <a href="/warnings">⚠️ Warnings</a>
+            </div>
         </div>
     </div>
 </body>

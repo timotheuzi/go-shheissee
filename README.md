@@ -303,16 +303,27 @@ type AttackDetectorConfig struct {
 - **Weak Encryption**: WEP encryption detection
 - **Open Networks**: Networks without any encryption
 
-## Docker Support
+## Podman Support
 
-Build the Docker image:
+**Setup sudo entitlement (run once):**
 ```bash
-docker build -t shheissee-go .
+make podman-setup
+```
+
+Build the Podman image:
+```bash
+make podman-build
 ```
 
 Run in container:
 ```bash
-docker run --privileged --net=host shheissee-go monitor
+make podman-run-privileged
+```
+
+Or manually:
+```bash
+podman build -t shheissee-go .
+podman run --privileged --net=host shheissee-go monitor
 ```
 
 ## Troubleshooting

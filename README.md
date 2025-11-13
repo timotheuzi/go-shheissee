@@ -7,7 +7,7 @@
 
 An intelligent AI-powered system designed to detect and warn about network intrusions, Bluetooth attacks, and WiFi threats in real-time with a beautiful web user interface. This is a complete rewrite of the original Python version in Go for better performance and cross-platform compatibility.
 
-## Table of Contents
+## Table of Contents ##
 
 - [Features](#features)
 - [Installation](#installation)

@@ -227,13 +227,26 @@ install-deps:
 	fi
 	@echo "System dependencies installed (if applicable)."
 
-# Docker build
-docker-build:
-	docker build -t shheissee-go .
+# Podman setup - configure sudo entitlement for podman user
+podman-setup:
+	@echo "Configuring sudo entitlement for podman user..."
+	sudo sh -c 'echo "$(USER) ALL=(ALL) NOPASSWD: /usr/bin/podman" > /etc/sudoers.d/podman'
+	sudo chmod 0440 /etc/sudoers.d/podman
+	@echo "Podman user sudo entitlement configured."
 
-# Docker run
-docker-run:
-	docker run --privileged --net=host shheissee-go monitor
+# Podman build
+podman-build:
+	podman build -t shheissee-go .
+
+# Podman clean
+podman-clean:
+	podman stop $$(podman ps -q -f ancestor=shheissee-go) || true
+	podman rm $$(podman ps -aq -f ancestor=shheissee-go) || true
+	podman rmi shheissee-go || true
+
+# Podman run privileged
+podman-run-privileged:
+	podman run --privileged --net=host shheissee-go monitor
 
 # Help
 help:
@@ -272,10 +285,12 @@ help:
 	@echo "  dev-setup      Setup development environment"
 	@echo "  demo           Run demo scenario setup"
 	@echo "  scan           Run quick security scan"
-	@echo "  install-deps   Install system dependencies (Linux)"
-	@echo "  docker-build   Build Docker image"
-	@echo "  docker-run     Run in Docker container"
-	@echo "  help           Show this help message"
+	@echo "  install-deps      Install system dependencies (Linux)"
+	@echo "  podman-setup      Configure sudo entitlement for podman user"
+	@echo "  podman-build      Build Podman image"
+	@echo "  podman-clean      Clean Podman images"
+	@echo "  podman-run-privileged Run in Podman container (privileged)"
+	@echo "  help              Show this help message"
 	@echo ""
 	@echo "Scripts:"
 	@echo "  ./scripts/run.sh - Run terminal version with sudo (interactive)"

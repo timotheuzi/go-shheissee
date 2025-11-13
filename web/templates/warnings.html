@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}}</title>
+    <meta http-equiv="refresh" content="15">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.1em;
+            margin-bottom: 20px;
+        }
+
+        .timestamp {
+            color: #34495e;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+
+        .warnings-content {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .warning-section {
+            margin-bottom: 30px;
+        }
+
+        .warning-section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .warning-card {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            border-left: 5px solid #f39c12;
+        }
+
+        .warning-high {
+            background: #ffeaea;
+            border-color: #f5c6cb;
+            border-left-color: #e74c3c;
+        }
+
+        .warning-medium {
+            background: #fff3cd;
+            border-color: #ffeaa7;
+            border-left-color: #f39c12;
+        }
+
+        .warning-low {
+            background: #d1ecf1;
+            border-color: #bee5eb;
+            border-left-color: #17a2b8;
+        }
+
+        .warning-title {
+            font-weight: bold;
+            color: #d32f2f;
+            margin-bottom: 10px;
+        }
+
+        .warning-description {
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        .warning-details {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .system-status {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .status-good {
+            border-left: 5px solid #27ae60;
+            background: #d5f4e6;
+        }
+
+        .status-caution {
+            border-left: 5px solid #f39c12;
+            background: #fff3cd;
+        }
+
+        .status-critical {
+            border-left: 5px solid #e74c3c;
+            background: #ffeaea;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9em;
+        }
+
+        .footer-nav {
+            margin-top: 20px;
+        }
+
+        .footer-nav a {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            margin: 0 15px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .footer-nav a:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .footer-nav a {
+                display: block;
+                margin: 5px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚠️ System Warnings & Alerts</h1>
+            <p>Security Monitoring Alerts Dashboard</p>
+            <div class="timestamp">Last Updated: {{.Timestamp}}</div>
+        </div>
+
+        <div class="warnings-content">
+            <div class="warning-section">
+                <h2>🚨 Active Warnings</h2>
+
+                {{if .RecentAttacks}}
+                {{range .RecentAttacks}}
+                <div class="warning-card warning-{{if eq .Severity 0}}high{{else if eq .Severity 1}}medium{{else}}low{{end}}">
+                    <div class="warning-title">[{{.Severity}}] {{.Type}}</div>
+                    <div class="warning-description">{{.Description}}</div>
+                    <div class="warning-details">
+                        <strong>Target:</strong> {{.Target}}<br>
+                        <strong>Timestamp:</strong> {{.Timestamp.Format "2006-01-02 15:04:05"}}
+                    </div>
+                </div>
+                {{end}}
+                {{else}}
+                <div class="system-status status-good">
+                    <h3>✅ All Systems Clear</h3>
+                    <p>No active warnings or security alerts detected.</p>
+                    <p><strong>Last Check:</strong> {{.Timestamp}}</p>
+                </div>
+                {{end}}
+            </div>
+
+            <div class="warning-section">
+                <h2>📊 System Health Overview</h2>
+                <div class="system-status {{if gt .TotalHigh 0}}status-critical{{else if gt .TotalMedium 0}}status-caution{{else}}status-good{{end}}">
+                    <h3>{{if gt .TotalHigh 0}}🚨 Critical Issues Detected{{else if gt .TotalMedium 0}}⚠️ System Needs Attention{{else}}✅ System Operating Normally{{end}}</h3>
+                    <p>
+                        High Priority: {{.TotalHigh}} |
+                        Medium Priority: {{.TotalMedium}} |
+                        Low Priority: {{.TotalLow}} |
+                        Total Events: {{.TotalAttacks}}
+                    </p>
+                </div>
+            </div>
+
+            <div class="warning-section">
+                <h2>💡 Recommendations</h2>
+                <div class="warning-card warning-low">
+                    <div class="warning-title">Regular Monitoring</div>
+                    <div class="warning-description">Keep the security monitor running continuously for optimal protection.</div>
+                </div>
+                <div class="warning-card warning-low">
+                    <div class="warning-title">Review Logs</div>
+                    <div class="warning-description">Regularly check the intrusion detection logs for patterns and potential threats.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>🔒 Shheissee AI Security Monitor | Real-time Updates Active</p>
+            <div class="footer-nav">
+                <a href="/">🏠 Main Dashboard</a>
+                <a href="/intrusion-detection">🛡️ Intrusion Log</a>
+                <a href="/warnings">⚠️ Warnings</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

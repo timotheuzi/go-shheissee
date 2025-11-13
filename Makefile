@@ -23,10 +23,51 @@ PORT ?= 8080
 BINARY_NAME=go-shheissee
 DIST_DIR=bin
 
+# Ensure bin directory exists
+bin:
+	mkdir -p bin
+
+# Build ALL possible executables at once (cleans first)
+all: clean bin terminal web android container
+	@echo "✅ All builds completed successfully!"
+	@echo ""
+	@echo "Built executables:"
+	@echo "  📱 Terminal: bin/go-shheissee"
+	@echo "  🌐 Web:      bin/go-shheissee-web"
+	@echo "  🤖 Android:  bin/go-shheissee.apk"
+	@echo "  🐳 Container: localhost/shheissee-web (Podman image)"
+	@echo ""
+	@echo "Usage:"
+	@echo "  Terminal: ./bin/go-shheissee"
+	@echo "  Web:      ./bin/go-shheissee-web --web"
+	@echo "  Container: podman run -p 8080:8080 localhost/shheissee-web"
+
+# Build terminal executable
+terminal: bin
+	GO111MODULE=on go build -mod=mod -o bin/go-shheissee ./cmd/shheissee
+
+# Build web version executable
+web: bin
+	GO111MODULE=on go build -mod=mod -o bin/go-shheissee-web ./cmd/shheissee
+
+# Build Android APK using gomobile
+android: bin
+	@echo "🔨 Building Android APK..."
+	@if command -v gomobile >/dev/null 2>&1; then \
+		gomobile init; \
+		GO111MODULE=on gomobile build -target=android -o bin/go-shheissee.apk ./cmd/shheissee; \
+		echo "✅ Android APK built: bin/go-shheissee.apk"; \
+	else \
+		echo "⚠️  gomobile not found - skipping Android build"; \
+		echo "   Install with: go install golang.org/x/mobile/cmd/gomobile@latest"; \
+	fi
+
+# Create Podman container image with web version
+container: Dockerfile bin
+	podman build -t localhost/shheissee-web .
+
 # Build targets
 .PHONY: all build clean test coverage run deps fmt vet help create-dist
-
-all: test build
 
 # Create distribution directory
 create-dist:
@@ -58,9 +99,8 @@ build-all: build-linux build-windows build-darwin
 # Clean build files
 clean:
 	$(GOCLEAN)
-	rm -rf $(DIST_DIR)
-	rm -f $(BINARY_NAME)
-	rm -f $(BINARY_NAME)-*
+	rm -f shimmy shimmy.log
+	rm -rf bin .gocache *.tmp
 
 # Disk clean - deep clean including logs and generated files
 disk-clean:
@@ -91,6 +131,44 @@ run:
 run-monitor:
 	$(GOBUILD) -o $(BINARY_NAME) $(MAIN_PACKAGE)
 	APP_PORT=$(PORT) ./$(BINARY_NAME) monitor
+
+# Run the terminal version (requires sudo for network monitoring)
+run_terminal: terminal
+	@echo "🔐 Running terminal version with sudo for network monitoring capabilities..."
+	sudo ./bin/go-shheissee
+
+# Run the web version (requires sudo for network monitoring)
+run_web: web
+	@echo "🔐 Running web version with sudo for network monitoring capabilities..."
+	sudo ./bin/go-shheissee-web --web
+
+# Run container with sudo and necessary capabilities for network monitoring
+run_container: container
+	@echo "🐳 Running container with sudo and network capabilities..."
+	sudo podman run --rm --cap-add=NET_RAW --cap-add=NET_ADMIN --cap-add=NET_BIND_SERVICE \
+		--device=/dev/net/tun --device=/dev/net/tap \
+		-p 8080:8080 -p 1001:1001 \
+		--name shheissee-web-container \
+		localhost/shheissee-web:latest
+
+# Run container in privileged mode (alternative method)
+run_container_privileged: container
+	@echo "🐳 Running container in privileged mode with full capabilities..."
+	podman run --rm --privileged --replace \
+		-p 8080:8080 \
+		--name shheissee-web-container \
+		localhost/shheissee-web:latest
+
+# Stop running container
+stop_container:
+	@echo "🛑 Stopping container..."
+	sudo podman stop shheissee-web-container 2>/dev/null || echo "No container running"
+
+# Clean containers and images
+clean_container: stop_container
+	@echo "🧹 Cleaning up containers and images..."
+	sudo podman rm shheissee-web-container 2>/dev/null || echo "No container to remove"
+	sudo podman rmi localhost/shheissee-web 2>/dev/null || echo "No image to remove"
 
 # Download dependencies
 deps:
@@ -139,7 +217,7 @@ install-deps:
 	elif command -v dnf >/dev/null 2>&1; then \
 		sudo dnf install -y wireless-tools nmap bluez bluez-tools; \
 	elif command -v pacman >/dev/null 2>&1; then \
-		sudo pacman -S --noconfirm wireless_tools nmap bluez bluez-utils; \
+		sudo pacman -S --nocondev wireless_tools nmap bluez bluez-utils; \
 	else \
 		echo "Unsupported package manager. Please install dependencies manually:"; \
 		echo "  - wireless-tools (iwlist)"; \
@@ -165,13 +243,24 @@ help:
 	@echo "  PORT           Web server port (default: 8080)"
 	@echo ""
 	@echo "Available targets:"
+	@echo "  all       - Build ALL executables (cleans first)"
+	@echo "  android   - Build Android APK using gomobile"
+	@echo "  terminal  - Build terminal executable"
+	@echo "  web       - Build web version executable"
+	@echo "  container - Create Podman container image with web version"
+	@echo "  run_terminal - Run the terminal version (requires sudo)"
+	@echo "  run_web   - Run the web version (requires sudo)"
+	@echo "  run_container - Run container with network capabilities (requires sudo)"
+	@echo "  run_container_privileged - Run container in privileged mode (requires sudo)"
+	@echo "  stop_container - Stop running container"
+	@echo "  clean_container - Clean containers and images"
+	@echo "  clean     - Clean build artifacts and temporary files"
 	@echo "  build          Build the binary"
 	@echo "  build-race     Build with race detection"
 	@echo "  build-linux    Build for Linux"
 	@echo "  build-windows  Build for Windows"
 	@echo "  build-darwin   Build for macOS"
 	@echo "  build-all      Build for all platforms"
-	@echo "  clean          Clean build files"
 	@echo "  test           Run tests"
 	@echo "  coverage       Run tests with coverage report"
 	@echo "  run            Build and run the application"
@@ -187,6 +276,10 @@ help:
 	@echo "  docker-build   Build Docker image"
 	@echo "  docker-run     Run in Docker container"
 	@echo "  help           Show this help message"
+	@echo ""
+	@echo "Scripts:"
+	@echo "  ./scripts/run.sh - Run terminal version with sudo (interactive)"
+	@echo "  ./scripts/run_podman.sh - Run container with full network capabilities (requires sudo)"
 	@echo ""
 	@echo "Usage examples:"
 	@echo "  make build && ./go-shheissee              # Build and run interactively"

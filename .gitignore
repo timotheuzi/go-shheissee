@@ -64,3 +64,4 @@ coverage.xml
 # Temporary directories
 tmp/
 temp/
+shimmy_old/

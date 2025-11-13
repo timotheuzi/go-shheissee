@@ -1,0 +1,6 @@
+{
+  "port": 1001,
+  "host": "",
+  "monitor_interval_seconds": 30,
+  "log_file": "shimmy.log"
+}

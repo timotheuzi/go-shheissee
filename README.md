@@ -67,6 +67,7 @@ PORT=9090 make run  # Run with custom port
 - Automatic detection of new and disappeared devices
 - Real-time port analysis and suspicious activity detection
 - Unknown device alerts with IP address tracking
+- Network latency monitoring and connectivity status
 
 ### 📡 Bluetooth Attack Detection
 - **Bluetooth Device Discovery**: Scans for nearby Bluetooth devices
@@ -92,6 +93,22 @@ PORT=9090 make run  # Run with custom port
 - **Weak Encryption Detection**: Flags WEP-encrypted networks
 - **Suspicious SSID Analysis**: Flags networks with suspicious names
 
+### 📻 Radio Frequency Monitoring
+- **SDR Device Detection**: Automatically detects RTL-SDR, HackRF, and other SDR devices
+- **Sub-GHz Signal Monitoring**: Scans for IoT sensors, wireless remotes, and doorbells (300-488MHz)
+- **433MHz Monitoring**: Detects wireless sensors and alarm systems
+- **868MHz Monitoring**: Monitors security systems and smart meters
+- **2.4GHz/5GHz Monitoring**: WiFi and Bluetooth frequency surveillance
+- **Built-in WiFi Card Support**: Uses existing WiFi hardware for basic monitoring
+- **Surveillance Detection**: Identifies hidden cameras, drones, and unauthorized transmitters
+
+### 🏷️ AirTag/BLE Monitoring
+- **Apple AirTag Detection**: Identifies Apple Find My network devices
+- **BLE Device Scanning**: Discovers all Bluetooth Low Energy devices
+- **Potential AirTag Flagging**: Automatically flags devices that may be AirTags
+- **BLE Attack Detection**: Monitors for BLE relay attacks and spoofing
+- **Proximity Tracking**: Detects unusually close BLE devices
+
 ### 🚨 Advanced Intrusion Detection
 - **Multi-layered Threat Detection**: Network + Bluetooth + WiFi monitoring
 - **AI Anomaly Detection**: Machine learning-based detection of unusual device behavior patterns
@@ -102,6 +119,15 @@ PORT=9090 make run  # Run with custom port
 - **Real-time Notifications**: Color-coded alerts with detailed descriptions
 - **Unknown Device Detection**: Immediate alerts for unauthorized devices
 - **Suspicious Port Analysis**: Identifies dangerous open ports (RDP:3389, Telnet:23, FTP:21, SMB:445)
+
+### 🛡️ Active Threat Response & Blocking
+- **Automatic Attack Blocking**: AI-driven automatic blocking of detected threats (configurable)
+- **Manual Blocking Controls**: Command-line and web interface blocking of IPs, MACs, and Bluetooth devices
+- **Firewall Integration**: Supports ufw, firewalld, and iptables for IP blocking
+- **WiFi Deauthentication**: Active disconnection of suspicious WiFi clients
+- **Bluetooth Device Blocking**: Prevent connections from unauthorized Bluetooth devices
+- **MAC Address Filtering**: Layer 2 blocking using ebtables or iptables
+- **Blocking Management**: View, add, and remove blocked items via CLI and web interface
 
 ### 🎨 Beautiful Web User Interface
 - **Modern Web Dashboard**: Built with HTML5, CSS3, and responsive design
@@ -183,6 +209,47 @@ go build -o shheissee ./cmd/shheissee
 GOOS=linux GOARCH=amd64 go build -o shheissee-linux-amd64 ./cmd/shheissee
 GOOS=windows GOARCH=amd64 go build -o shheissee-windows-amd64.exe ./cmd/shheissee
 GOOS=darwin GOARCH=amd64 go build -o shheissee-macos-amd64 ./cmd/shheissee
+
+# Build all versions at once (terminal, web, Android, container)
+make all
+
+# Build Android APK
+make android
+
+# Build container image
+make container
+```
+
+### Android Build
+
+Build Android APK using gomobile:
+
+```bash
+# Install gomobile (if not already installed)
+go install golang.org/x/mobile/cmd/gomobile@latest
+gomobile init
+
+# Build APK
+make android
+# or
+./scripts/build_android.sh
+
+# Install on device
+adb install -r bin/go-shheissee.apk
+```
+
+### Container Build
+
+Build and run as Podman container:
+
+```bash
+# Build container image
+make container
+
+# Run with full network capabilities
+make run_container
+# or
+./scripts/run_podman.sh
 ```
 
 ## Usage
@@ -220,6 +287,15 @@ This starts the interactive menu with these options:
 
 # Web server only
 ./shheissee web
+
+# Blocking commands
+./shheissee block ip 192.168.1.100 "Suspicious activity"
+./shheissee block mac AA:BB:CC:DD:EE:FF "Unauthorized device"
+./shheissee block bt 11:22:33:44:55:66 "Blocked Bluetooth device"
+./shheissee unblock ip 192.168.1.100
+./shheissee deauth AA:BB:CC:DD:EE:FF 00:11:22:33:44:55 "Kick off rogue client"
+./shheissee autoblock on    # Enable automatic blocking
+./shheissee blocked        # Show all blocked items
 ```
 
 ### Web Interface

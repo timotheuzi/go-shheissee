@@ -149,3 +149,10 @@ type AnomalyDetector struct {
 	ConnectionHistory map[string][]time.Time         `json:"connection_history"`
 	AnomalyThreshold  float64                        `json:"anomaly_threshold"`
 }
+
+// BlockedItems represents currently blocked network elements
+type BlockedItems struct {
+	BlockedIPs     map[string]time.Time `json:"blocked_ips"`
+	BlockedMACs    map[string]time.Time `json:"blocked_macs"`
+	BlockedBTAddrs map[string]time.Time `json:"blocked_bt_addrs"`
+}

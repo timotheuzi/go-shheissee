@@ -20,6 +20,7 @@ type AttackDetector struct {
 	bluetoothScanner *scanners.BluetoothScanner
 	wifiScanner      *scanners.WiFiScanner
 	anomalyDetector  *models.AnomalyDetector
+	blocker          *Blocker
 	knownDevices     []string
 	knownBtDevices   []models.BluetoothDevice
 	attackLog        []models.Attack
@@ -60,6 +61,9 @@ func NewAttackDetector(config *models.AttackDetectorConfig) (*AttackDetector, er
 		AnomalyThreshold:  config.AnomalyThreshold,
 	}
 
+	// Create blocker (auto-block disabled by default for safety)
+	blocker := NewBlocker(logger, false)
+
 	detector := &AttackDetector{
 		config:           config,
 		logger:           logger,
@@ -68,6 +72,7 @@ func NewAttackDetector(config *models.AttackDetectorConfig) (*AttackDetector, er
 		bluetoothScanner: bluetoothScanner,
 		wifiScanner:      wifiScanner,
 		anomalyDetector:  anomalyDetector,
+		blocker:          blocker,
 		knownDevices:     knownDevices,
 		knownBtDevices:   knownBtDevices,
 		attackLog:        []models.Attack{},
@@ -461,6 +466,14 @@ func (ad *AttackDetector) logAttack(attack models.Attack) {
 	ad.attackLog = append(ad.attackLog, attack)
 	ad.logger.LogAttack(&attack)
 	ad.consoleLogger.DisplayAttack(&attack)
+
+	// Attempt auto-blocking if enabled
+	if ad.blocker != nil {
+		err := ad.blocker.AutoBlockAttack(attack)
+		if err != nil {
+			ad.logger.LogError(fmt.Sprintf("Auto-blocking failed for attack %s", attack.Type), err)
+		}
+	}
 }
 
 // GetAttackCount returns the total number of detected attacks
@@ -481,6 +494,77 @@ func (ad *AttackDetector) GetRecentAttacks(limit int) []models.Attack {
 	}
 
 	return ad.attackLog[start:]
+}
+
+// BlockIP manually blocks an IP address
+func (ad *AttackDetector) BlockIP(ip string, reason string) error {
+	if ad.blocker == nil {
+		return fmt.Errorf("blocker not initialized")
+	}
+	return ad.blocker.BlockIP(ip, reason)
+}
+
+// UnblockIP manually unblocks an IP address
+func (ad *AttackDetector) UnblockIP(ip string) error {
+	if ad.blocker == nil {
+		return fmt.Errorf("blocker not initialized")
+	}
+	return ad.blocker.UnblockIP(ip)
+}
+
+// BlockMAC manually blocks a MAC address
+func (ad *AttackDetector) BlockMAC(mac string, reason string) error {
+	if ad.blocker == nil {
+		return fmt.Errorf("blocker not initialized")
+	}
+	return ad.blocker.BlockMAC(mac, reason)
+}
+
+// UnblockMAC manually unblocks a MAC address
+func (ad *AttackDetector) UnblockMAC(mac string) error {
+	if ad.blocker == nil {
+		return fmt.Errorf("blocker not initialized")
+	}
+	return ad.blocker.UnblockMAC(mac)
+}
+
+// BlockBluetoothDevice manually blocks a Bluetooth device
+func (ad *AttackDetector) BlockBluetoothDevice(btAddr string, reason string) error {
+	if ad.blocker == nil {
+		return fmt.Errorf("blocker not initialized")
+	}
+	return ad.blocker.BlockBluetoothDevice(btAddr, reason)
+}
+
+// UnblockBluetoothDevice manually unblocks a Bluetooth device
+func (ad *AttackDetector) UnblockBluetoothDevice(btAddr string) error {
+	if ad.blocker == nil {
+		return fmt.Errorf("blocker not initialized")
+	}
+	return ad.blocker.UnblockBluetoothDevice(btAddr)
+}
+
+// DeauthWiFiClient sends deauthentication packets to disconnect a WiFi client
+func (ad *AttackDetector) DeauthWiFiClient(clientMAC string, apMAC string, reason string) error {
+	if ad.blocker == nil {
+		return fmt.Errorf("blocker not initialized")
+	}
+	return ad.blocker.DeauthWiFiClient(clientMAC, apMAC, reason)
+}
+
+// GetBlockedItems returns all currently blocked items
+func (ad *AttackDetector) GetBlockedItems() models.BlockedItems {
+	if ad.blocker == nil {
+		return models.BlockedItems{}
+	}
+	return ad.blocker.GetBlockedItems()
+}
+
+// SetAutoBlock enables or disables automatic blocking
+func (ad *AttackDetector) SetAutoBlock(enabled bool) {
+	if ad.blocker != nil {
+		ad.blocker.SetAutoBlock(enabled)
+	}
 }
 
 // Close shuts down the attack detector and cleans up resources

@@ -90,6 +90,32 @@ func handleCommand(args []string) {
 		runDemo()
 	case "web":
 		runWebServer()
+	case "block":
+		if len(args) < 3 {
+			fmt.Printf("%sUsage: go-shheissee block <ip|mac|bt> <address> [reason]%s\n", models.ColorRed, models.ColorReset)
+			os.Exit(1)
+		}
+		runBlock(args[1:])
+	case "unblock":
+		if len(args) < 3 {
+			fmt.Printf("%sUsage: go-shheissee unblock <ip|mac|bt> <address>%s\n", models.ColorRed, models.ColorReset)
+			os.Exit(1)
+		}
+		runUnblock(args[1:])
+	case "deauth":
+		if len(args) < 3 {
+			fmt.Printf("%sUsage: go-shheissee deauth <client_mac> <ap_mac> [reason]%s\n", models.ColorRed, models.ColorReset)
+			os.Exit(1)
+		}
+		runDeauth(args[1:])
+	case "autoblock":
+		if len(args) < 2 {
+			fmt.Printf("%sUsage: go-shheissee autoblock <on|off>%s\n", models.ColorRed, models.ColorReset)
+			os.Exit(1)
+		}
+		runSetAutoBlock(args[1:])
+	case "blocked":
+		runShowBlocked()
 	case "help", "-h", "--help":
 		showHelp()
 	default:
@@ -302,6 +328,157 @@ func waitForEnter() {
 	fmt.Scanln()
 }
 
+func runBlock(args []string) {
+	blockType := strings.ToLower(args[0])
+	address := args[1]
+	reason := "Manual block via command line"
+	if len(args) > 2 {
+		reason = strings.Join(args[2:], " ")
+	}
+
+	cfg := models.DefaultConfig()
+	config.EnsureDirectories(cfg)
+
+	attackDetector, err := detector.NewAttackDetector(cfg)
+	if err != nil {
+		fmt.Printf("%sError initializing detector: %v%s\n", models.ColorRed, err, models.ColorReset)
+		os.Exit(1)
+	}
+	defer attackDetector.Close()
+
+	switch blockType {
+	case "ip":
+		err = attackDetector.BlockIP(address, reason)
+	case "mac":
+		err = attackDetector.BlockMAC(address, reason)
+	case "bt":
+		err = attackDetector.BlockBluetoothDevice(address, reason)
+	default:
+		fmt.Printf("%sInvalid block type. Use: ip, mac, or bt%s\n", models.ColorRed, models.ColorReset)
+		os.Exit(1)
+	}
+
+	if err != nil {
+		fmt.Printf("%sError blocking %s %s: %v%s\n", models.ColorRed, blockType, address, err, models.ColorReset)
+		os.Exit(1)
+	}
+
+	fmt.Printf("%s✅ Successfully blocked %s %s%s\n", models.ColorGreen, blockType, address, models.ColorReset)
+}
+
+func runUnblock(args []string) {
+	blockType := strings.ToLower(args[0])
+	address := args[1]
+
+	cfg := models.DefaultConfig()
+	config.EnsureDirectories(cfg)
+
+	attackDetector, err := detector.NewAttackDetector(cfg)
+	if err != nil {
+		fmt.Printf("%sError initializing detector: %v%s\n", models.ColorRed, err, models.ColorReset)
+		os.Exit(1)
+	}
+	defer attackDetector.Close()
+
+	switch blockType {
+	case "ip":
+		err = attackDetector.UnblockIP(address)
+	case "mac":
+		err = attackDetector.UnblockMAC(address)
+	case "bt":
+		err = attackDetector.UnblockBluetoothDevice(address)
+	default:
+		fmt.Printf("%sInvalid block type. Use: ip, mac, or bt%s\n", models.ColorRed, models.ColorReset)
+		os.Exit(1)
+	}
+
+	if err != nil {
+		fmt.Printf("%sError unblocking %s %s: %v%s\n", models.ColorRed, blockType, address, err, models.ColorReset)
+		os.Exit(1)
+	}
+
+	fmt.Printf("%s✅ Successfully unblocked %s %s%s\n", models.ColorGreen, blockType, address, models.ColorReset)
+}
+
+func runDeauth(args []string) {
+	clientMAC := args[0]
+	apMAC := args[1]
+	reason := "Manual deauth via command line"
+	if len(args) > 2 {
+		reason = strings.Join(args[2:], " ")
+	}
+
+	cfg := models.DefaultConfig()
+	config.EnsureDirectories(cfg)
+
+	attackDetector, err := detector.NewAttackDetector(cfg)
+	if err != nil {
+		fmt.Printf("%sError initializing detector: %v%s\n", models.ColorRed, err, models.ColorReset)
+		os.Exit(1)
+	}
+	defer attackDetector.Close()
+
+	err = attackDetector.DeauthWiFiClient(clientMAC, apMAC, reason)
+	if err != nil {
+		fmt.Printf("%sError deauthenticating WiFi client %s: %v%s\n", models.ColorRed, clientMAC, err, models.ColorReset)
+		os.Exit(1)
+	}
+
+	fmt.Printf("%s✅ Successfully deauthenticated WiFi client %s from AP %s%s\n", models.ColorGreen, clientMAC, apMAC, models.ColorReset)
+}
+
+func runSetAutoBlock(args []string) {
+	enabled := strings.ToLower(args[0]) == "on"
+
+	cfg := models.DefaultConfig()
+	config.EnsureDirectories(cfg)
+
+	attackDetector, err := detector.NewAttackDetector(cfg)
+	if err != nil {
+		fmt.Printf("%sError initializing detector: %v%s\n", models.ColorRed, err, models.ColorReset)
+		os.Exit(1)
+	}
+	defer attackDetector.Close()
+
+	attackDetector.SetAutoBlock(enabled)
+
+	status := "disabled"
+	if enabled {
+		status = "enabled"
+	}
+	fmt.Printf("%s✅ Auto-blocking %s%s\n", models.ColorGreen, status, models.ColorReset)
+}
+
+func runShowBlocked() {
+	cfg := models.DefaultConfig()
+	config.EnsureDirectories(cfg)
+
+	attackDetector, err := detector.NewAttackDetector(cfg)
+	if err != nil {
+		fmt.Printf("%sError initializing detector: %v%s\n", models.ColorRed, err, models.ColorReset)
+		os.Exit(1)
+	}
+	defer attackDetector.Close()
+
+	blocked := attackDetector.GetBlockedItems()
+
+	fmt.Printf("%sCurrently Blocked Items:%s\n", models.ColorBlue, models.ColorReset)
+	fmt.Printf("IPs: %d\n", len(blocked.BlockedIPs))
+	for ip, timestamp := range blocked.BlockedIPs {
+		fmt.Printf("  %s (blocked at %s)\n", ip, timestamp.Format("2006-01-02 15:04:05"))
+	}
+
+	fmt.Printf("MACs: %d\n", len(blocked.BlockedMACs))
+	for mac, timestamp := range blocked.BlockedMACs {
+		fmt.Printf("  %s (blocked at %s)\n", mac, timestamp.Format("2006-01-02 15:04:05"))
+	}
+
+	fmt.Printf("Bluetooth: %d\n", len(blocked.BlockedBTAddrs))
+	for bt, timestamp := range blocked.BlockedBTAddrs {
+		fmt.Printf("  %s (blocked at %s)\n", bt, timestamp.Format("2006-01-02 15:04:05"))
+	}
+}
+
 func showHelp() {
 	fmt.Println("Go-Shheissee Security Monitor")
 	fmt.Println("Usage: go-shheissee [command]")
@@ -312,6 +489,15 @@ func showHelp() {
 	fmt.Println("  bluetooth         Start Bluetooth device monitor")
 	fmt.Println("  demo              Set up demo attack scenario")
 	fmt.Println("  web               Start web server only")
+	fmt.Println()
+	fmt.Println("Blocking Commands:")
+	fmt.Println("  block <ip|mac|bt> <address> [reason]    Block IP, MAC, or Bluetooth device")
+	fmt.Println("  unblock <ip|mac|bt> <address>           Unblock IP, MAC, or Bluetooth device")
+	fmt.Println("  deauth <client_mac> <ap_mac> [reason]   Deauthenticate WiFi client")
+	fmt.Println("  autoblock <on|off>                      Enable/disable automatic blocking")
+	fmt.Println("  blocked                                 Show currently blocked items")
+	fmt.Println()
+	fmt.Println("Other Commands:")
 	fmt.Println("  help, -h, --help  Show this help message")
 	fmt.Println()
 	fmt.Println("Running without arguments starts the interactive menu.")

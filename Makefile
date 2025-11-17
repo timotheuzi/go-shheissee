@@ -53,13 +53,48 @@ web: bin
 # Build Android APK using gomobile
 android: bin
 	@echo "🔨 Building Android APK..."
-	@if command -v gomobile >/dev/null 2>&1; then \
+	@if [ -x $(GOPATH)/bin/gomobile ]; then \
+		export ANDROID_NDK_HOME=/home/maestro/Android/Sdk/ndk-bundle; \
+		export PATH=$(GOPATH)/bin:$(PATH); \
 		gomobile init; \
 		GO111MODULE=on gomobile build -target=android -o bin/go-shheissee.apk ./cmd/shheissee; \
 		echo "✅ Android APK built: bin/go-shheissee.apk"; \
 	else \
 		echo "⚠️  gomobile not found - skipping Android build"; \
 		echo "   Install with: go install golang.org/x/mobile/cmd/gomobile@latest"; \
+	fi
+
+# Build native Android app with professional UI
+build-android: bin
+	@echo "🔨 Building native Android app..."
+	@if command -v docker >/dev/null 2>&1; then \
+		echo "📦 Setting up Android SDK and NDK..."; \
+		cd android && docker run --rm -v $$(pwd):/project \
+			-e ANDROID_HOME=/opt/android-sdk \
+			-e ANDROID_NDK_HOME=/opt/android-sdk/ndk/26.1.10909125 \
+			-e PATH=/opt/android-sdk/cmdline-tools/latest/bin:/opt/android-sdk/tools/bin:/opt/android-sdk/platform-tools:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+			thyrlian/android-sdk:latest \
+			bash -c "\
+				echo '🔧 Installing Android SDK components...'; \
+				sdkmanager --install 'platform-tools' 'platforms;android-34' 'build-tools;34.0.0' 'ndk;26.1.10909125'; \
+				echo '✅ Accepting Android SDK licenses...'; \
+				yes | sdkmanager --licenses; \
+				echo '🔨 Creating Gradle wrapper...'; \
+				gradle wrapper; \
+				echo '🏗️ Building APK...'; \
+				./gradlew assembleDebug --no-daemon; \
+				echo '📋 Build completed'"; \
+		if [ -f android/app/build/outputs/apk/debug/app-debug.apk ]; then \
+			cp android/app/build/outputs/apk/debug/app-debug.apk bin/shheissee-monitor.apk; \
+			echo "✅ Native Android APK built: bin/shheissee-monitor.apk"; \
+			echo "📱 APK ready for installation on Android devices"; \
+		else \
+			echo "❌ APK build failed - check android/app/build/outputs/logs for details"; \
+			exit 1; \
+		fi; \
+	else \
+		echo "⚠️  Docker not found - cannot build native Android app"; \
+		echo "   Install Docker and try again"; \
 	fi
 
 # Create Podman container image with web version
@@ -258,6 +293,7 @@ help:
 	@echo "Available targets:"
 	@echo "  all       - Build ALL executables (cleans first)"
 	@echo "  android   - Build Android APK using gomobile"
+	@echo "  build-android - Build native Android app with professional UI"
 	@echo "  terminal  - Build terminal executable"
 	@echo "  web       - Build web version executable"
 	@echo "  container - Create Podman container image with web version"

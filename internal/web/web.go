@@ -1,6 +1,7 @@
 package web
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -103,6 +104,13 @@ func (ws *WebServer) handleWarnings(w http.ResponseWriter, r *http.Request) {
 	ws.renderTemplate(w, "warnings.html", data)
 }
 
+// APIAttack represents attack data for JSON API
+type APIAttack struct {
+	Type        string `json:"type"`
+	Description string `json:"description"`
+	Timestamp   string `json:"timestamp"`
+}
+
 // handleAPIAttacks provides JSON API for attack data
 func (ws *WebServer) handleAPIAttacks(w http.ResponseWriter, r *http.Request) {
 	limit := 50 // Default limit
@@ -119,12 +127,25 @@ func (ws *WebServer) handleAPIAttacks(w http.ResponseWriter, r *http.Request) {
 	}
 	recentAttacks := ws.attackLog[start:]
 
+	// Convert attacks to API format
+	apiAttacks := make([]APIAttack, len(recentAttacks))
+	for i, attack := range recentAttacks {
+		apiAttacks[i] = APIAttack{
+			Type:        attack.Type,
+			Description: attack.Description,
+			Timestamp:   attack.Timestamp.Format(time.RFC3339),
+		}
+	}
+
+	response := map[string]interface{}{
+		"attacks": apiAttacks,
+		"count":   len(apiAttacks),
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	// This would output JSON in a complete implementation
-	fmt.Fprintf(w, `{"attacks": [], "count": 0}`)
-	recentAttacks = recentAttacks // use the variable
+	json.NewEncoder(w).Encode(response)
 }
 
 // handleAPIStatus provides system status JSON

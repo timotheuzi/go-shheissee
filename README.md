@@ -553,6 +553,6 @@ This software is protected by copyright. See the original Python version license
 
 ## Credits
 
-Original Python implementation by Maggotcorp and Timotheuzi.
+Original Python implementation by autarkylabs and timotheuzi@yahoo.com.
 
 Go rewrite for improved performance and maintainability.
